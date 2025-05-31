@@ -1,0 +1,70 @@
+[
+  {
+    "keywords": [
+      "oi",
+      "ola",
+      "hello"
+    ],
+    "response": "Olá! Eu sou seu assistente virtual. Como posso te ajudar hoje?"
+  },
+  {
+    "keywords": [
+      "deus",
+      "criador",
+      "humano",
+      "gean"
+    ],
+    "response": "Gean Carlos me desenvolveu. O que deseja, Humano? 😊"
+  },
+  {
+    "keywords": [
+      "ajuda",
+      "ajudar",
+      "socorro",
+      "help"
+    ],
+    "response": "Estou aqui para ajudar! Pergunte qualquer coisa!"
+  },
+  {
+    "keywords": [
+      "nome",
+      "quem é voce",
+      "seu nome"
+    ],
+    "response": "Sou um assistente virtual criado por Gean Carlos."
+  },
+  {
+    "keywords": [
+      "tchau",
+      "adeus",
+      "sair"
+    ],
+    "response": "Até logo! Volte sempre que precisar!"
+  },
+  {
+    "keywords": [
+      "toledo",
+      "fibra",
+      "onu"
+    ],
+    "response": "Você está falando com o Gean, suporte da Toledo Fibra."
+  },
+  {
+    "keywords": [
+      "tudo bem?"
+    ],
+    "response": "Defina uma resposta aqui."
+  },
+  {
+    "keywords": [
+      "cade meu rato?"
+    ],
+    "response": "Defina uma resposta aqui."
+  },
+  {
+    "keywords": [
+      "o que?"
+    ],
+    "response": "Defina uma resposta aqui."
+  }
+]

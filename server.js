@@ -1,6 +1,8 @@
 // server.js
 const express = require('express');
 const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -9,28 +11,64 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-const mockResults = [
-  {
-    title: 'Inteligência Artificial - Wikipédia',
-    link: 'https://pt.wikipedia.org/wiki/Intelig%C3%AAncia_artificial', 
-    snippet: 'Inteligência artificial refere-se à capacidade de máquinas executar funções normalmente associadas à inteligência humana.',
-  },
-  {
-    title: 'O que é IA? - Microsoft Azure',
-    link: 'https://azure.microsoft.com/pt-br/resources/cloud-computing-dictionary/what-is-ai/', 
-    snippet: 'Entenda os fundamentos da inteligência artificial e como ela está transformando indústrias.',
-  },
-  {
-    title: 'IA Generativa - OpenAI',
-    link: 'https://openai.com/', 
-    snippet: 'OpenAI desenvolve modelos avançados de IA generativa como o GPT-4.',
-  },
-  {
-    title: 'Quem é o seu - Deus?',
-    link: '', 
-    snippet: 'Gean carlos me desenvolveu, o que deseja Humano?',
-  },
-];
+const conversationsPath = path.join(__dirname, 'conversations.json');
+const faqPath = path.join(__dirname, 'faq.json');
+
+// Função para normalizar texto
+function normalize(text) {
+  return text.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+// Carrega o FAQ (ou cria vazio)
+let faq = [];
+if (fs.existsSync(faqPath)) {
+  faq = JSON.parse(fs.readFileSync(faqPath, 'utf-8'));
+} else {
+  faq = [
+    {
+      keywords: ['oi', 'ola', 'hello'],
+      response: 'Olá! Eu sou seu assistente virtual. Como posso te ajudar hoje?'
+    },
+    {
+      keywords: ['deus', 'criador', 'humano', 'gean'],
+      response: 'Gean Carlos me desenvolveu. O que deseja, Humano? 😊'
+    },
+    {
+      keywords: ['ajuda', 'ajudar', 'socorro', 'help'],
+      response: 'Estou aqui para ajudar! Pergunte qualquer coisa!'
+    },
+    {
+      keywords: ['nome', 'quem é voce', 'seu nome'],
+      response: 'Sou um assistente virtual criado por Gean Carlos.'
+    },
+    {
+      keywords: ['tchau', 'adeus', 'sair'],
+      response: 'Até logo! Volte sempre que precisar!'
+    },
+    {
+      keywords: ['toledo', 'fibra', 'onu'],
+      response: 'Você está falando com o Gean, suporte da Toledo Fibra.'
+    }
+  ];
+  fs.writeFileSync(faqPath, JSON.stringify(faq, null, 2));
+}
+
+// Função para registrar a conversa
+function logConversation(userInput, botResponse) {
+  let conversations = [];
+
+  if (fs.existsSync(conversationsPath)) {
+    conversations = JSON.parse(fs.readFileSync(conversationsPath, 'utf-8'));
+  }
+
+  conversations.push({
+    timestamp: new Date().toISOString(),
+    user: userInput,
+    bot: botResponse
+  });
+
+  fs.writeFileSync(conversationsPath, JSON.stringify(conversations, null, 2));
+}
 
 app.post('/search', (req, res) => {
   const { query } = req.body;
@@ -39,15 +77,19 @@ app.post('/search', (req, res) => {
     return res.status(400).json({ error: 'Query parameter is required' });
   }
 
-  // Simulando resultados com base na consulta
-  const results = mockResults.filter(
-    result => result.title.toLowerCase().includes(query.toLowerCase()) ||
-             result.snippet.toLowerCase().includes(query.toLowerCase())
+  const normalizedQuery = normalize(query);
+
+  const result = faq.find(item =>
+    item.keywords.some(kw => normalizedQuery.includes(normalize(kw)))
   );
 
-  setTimeout(() => {
-    res.json(results);
-  }, 800); // Simula latência
+  if (result) {
+    logConversation(query, result.response);
+    res.json([result]);
+  } else {
+    logConversation(query, 'Não entendi.');
+    res.json([]);
+  }
 });
 
 app.listen(PORT, () => {
