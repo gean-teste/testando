@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Chat IA</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .chat-container {
+      height: calc(100vh - 180px);
+    }
+    .message {
+      max-width: 80%;
+    }
+    .user-message {
+      margin-left: auto;
+    }
+    .bot-message {
+      margin-right: auto;
+    }
+    .typing-indicator span {
+      animation: bounce 1.5s infinite ease-in-out;
+    }
+    .typing-indicator span:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+    .typing-indicator span:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+  </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="p-4 border-b border-gray-700 flex items-center">
+    <div class="w-8 h-8 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center mr-3">
+      <i class="fas fa-robot text-white text-sm"></i>
+    </div>
+    <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">Assistente IA</h1>
+  </header>
+
+  <!-- Chat Container -->
+  <main class="flex-grow overflow-hidden">
+    <div id="chat-messages" class="chat-container p-4 overflow-y-auto space-y-4">
+      <div class="bot-message message bg-gray-800 p-4 rounded-lg rounded-tl-none">
+        <div class="flex items-start">
+          <div class="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center mr-2 flex-shrink-0">
+            <i class="fas fa-robot text-white text-xs"></i>
+          </div>
+          <div>
+            <p class="text-sm">Olá! Eu sou seu assistente de IA. Como posso te ajudar hoje?</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input Area -->
+    <div class="p-4 border-t border-gray-700 bg-gray-900">
+      <div class="relative flex items-center">
+        <input
+          type="text"
+          id="search-input"
+          placeholder="Digite sua mensagem..."
+          class="w-full px-4 py-3 rounded-lg bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 pr-12"
+          onkeydown="if(event.key === 'Enter') performSearch()"
+        />
+        <button 
+          onclick="performSearch()" 
+          class="absolute right-2 bg-blue-600 hover:bg-blue-700 w-8 h-8 rounded-full flex items-center justify-center transition"
+        >
+          <i class="fas fa-paper-plane text-white text-sm"></i>
+        </button>
+      </div>
+      <p class="text-xs text-gray-500 mt-2 text-center">Assistente IA pode cometer erros. Verifique informações importantes.</p>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="p-3 text-center text-gray-600 border-t border-gray-800 text-sm">© 2025 Assistente IA</footer>
+
+  <!-- Script -->
+  <script>
+    async function performSearch() {
+      const input = document.getElementById("search-input");
+      const query = input.value.trim();
+      const chatContainer = document.getElementById("chat-messages");
+
+      if (!query) return;
+
+      // Add user message
+      addMessage(query, 'user');
+      input.value = '';
+
+      // Show typing indicator
+      const typingId = showTypingIndicator();
+
+      try {
+        const response = await fetch("http://localhost:3000/search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: query }),
+        });
+
+        const data = await response.json();
+
+        // Remove typing indicator
+        removeTypingIndicator(typingId);
+
+        if (!data.length) {
+          addMessage("Desculpe, não encontrei resultados para sua pergunta.", 'bot');
+          return;
+        }
+
+        // Format response
+        let responseText = "Aqui estão alguns resultados que encontrei:\n\n";
+        data.forEach((result, index) => {
+          responseText += `${index + 1}. <a href="${result.link}" target="_blank" class="text-blue-400 hover:underline">${result.title}</a>\n`;
+          responseText += `${result.snippet}\n\n`;
+        });
+
+        addMessage(responseText, 'bot');
+      } catch (err) {
+        removeTypingIndicator(typingId);
+        addMessage("Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente mais tarde.", 'bot');
+        console.error(err);
+      }
+    }
+
+    function addMessage(text, sender) {
+      const chatContainer = document.getElementById("chat-messages");
+      const messageDiv = document.createElement('div');
+      
+      messageDiv.className = `message ${sender}-message bg-gray-800 p-4 rounded-lg ${
+        sender === 'user' ? 'rounded-tr-none ml-auto bg-blue-900/30' : 'rounded-tl-none mr-auto'
+      }`;
+      
+      messageDiv.innerHTML = `
+        <div class="flex items-start">
+          <div class="w-6 h-6 rounded-full ${
+            sender === 'user' ? 'bg-purple-500' : 'bg-blue-500'
+          } flex items-center justify-center mr-2 flex-shrink-0">
+            <i class="fas ${
+              sender === 'user' ? 'fa-user' : 'fa-robot'
+            } text-white text-xs"></i>
+          </div>
+          <div class="whitespace-pre-wrap">${text}</div>
+        </div>
+      `;
+      
+      chatContainer.appendChild(messageDiv);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    function showTypingIndicator() {
+      const chatContainer = document.getElementById("chat-messages");
+      const typingId = 'typing-' + Date.now();
+      
+      const typingDiv = document.createElement('div');
+      typingDiv.id = typingId;
+      typingDiv.className = 'bot-message message bg-gray-800 p-3 rounded-lg rounded-tl-none';
+      
+      typingDiv.innerHTML = `
+        <div class="flex items-center">
+          <div class="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center mr-2 flex-shrink-0">
+            <i class="fas fa-robot text-white text-xs"></i>
+          </div>
+          <div class="typing-indicator flex space-x-1">
+            <span class="w-2 h-2 bg-gray-400 rounded-full"></span>
+            <span class="w-2 h-2 bg-gray-400 rounded-full"></span>
+            <span class="w-2 h-2 bg-gray-400 rounded-full"></span>
+          </div>
+        </div>
+      `;
+      
+      chatContainer.appendChild(typingDiv);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+      
+      return typingId;
+    }
+
+    function removeTypingIndicator(id) {
+      const element = document.getElementById(id);
+      if (element) {
+        element.remove();
+      }
+    }
+  </script>
+</body>
+</html>
